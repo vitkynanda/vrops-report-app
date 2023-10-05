@@ -143,6 +143,10 @@ export const ConfigReport = () => {
       const headers = [];
 
       if (res.status === 200) {
+        if (res.data.values.length === 0) {
+          return toast.error("Report data not found");
+        }
+
         const allStats = res?.data?.values[0]["stat-list"].stat;
 
         for (const [index, stat] of allStats.entries()) {

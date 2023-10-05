@@ -9,10 +9,10 @@ import { Button } from "@/components/ui/button";
 import { useModal } from "@/hooks/use-modal";
 import { useVmStats } from "@/hooks/use-vm-stats";
 import { AccordionItem } from "@radix-ui/react-accordion";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
-import { ArrowUpDown } from "lucide-react";
-import { useParams } from "next/navigation";
+import { ArrowLeft, ArrowUpDown, Loader2 } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 
 export const columns: any[] = [
@@ -116,6 +116,7 @@ export const columns: any[] = [
 
 const DetailPage = (props: any) => {
   const [detailData, setDetailData] = useState<any>({});
+  const router = useRouter();
   const { id }: any = useParams();
   const { data, setData }: any = useVmStats();
   const { onOpen } = useModal();
@@ -147,43 +148,59 @@ const DetailPage = (props: any) => {
 
   return (
     <div className="w-full mb-5">
-      <div className="flex justify-between">
-        <div>
-          <h1 className="font-bold text-xl mb-3">Main Information</h1>
-          <p>Name: {detailData?.name}</p>
-          <p>Resource Kind: {detailData?.resourceKind}</p>
-          <p>Adapter Kind: {detailData?.adapterKind}</p>
-          <p>IP Address: {detailData?.ip_address}</p>
+      <Button
+        variant="outline"
+        className="px-3 mb-2"
+        onClick={() => router.push("/")}
+      >
+        <ArrowLeft className="mr-2" />
+        Back
+      </Button>
+      {isLoading ? (
+        <div className="flex space-x-2 mt-10 items-center justify-center">
+          <Loader2 className="h-5 w-5 text-zinc-500 animate-spin my-4" />
+          <p>Getting Detail Data Information...</p>
         </div>
-        <div>
-          <Button
-            onClick={() =>
-              onOpen("reports", { identifier: detailData.identifier })
-            }
-          >
-            Get Report Stats
-          </Button>
-        </div>
-      </div>
-      <Accordion type="single" collapsible className="w-full">
-        <AccordionItem value="item-1">
-          <AccordionTrigger>
-            <h1 className="font-bold text-xl my-3 ">Other Information</h1>
-          </AccordionTrigger>
-          <AccordionContent>
-            {isLoading && <p>Loading Data...</p>}
-            <div className="grid  grid-cols-2">
-              {detailData?.properties?.map((property: any, idx: number) => (
-                <div key={idx} className="flex items-center space-x-2">
-                  <p className="font-semibold">{property.name} :</p>
-                  <p>{property.value}</p>
-                </div>
-              ))}
+      ) : (
+        <>
+          <div className="flex justify-between">
+            <div>
+              <h1 className="font-bold text-xl mb-3">Main Information</h1>
+              <p>Name: {detailData?.name}</p>
+              <p>Resource Kind: {detailData?.resourceKind}</p>
+              <p>Adapter Kind: {detailData?.adapterKind}</p>
+              <p>IP Address: {detailData?.ip_address}</p>
             </div>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
-
+            <div>
+              <Button
+                onClick={() =>
+                  onOpen("reports", { identifier: detailData.identifier })
+                }
+              >
+                Get Report Stats
+              </Button>
+            </div>
+          </div>
+          <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="item-1">
+              <AccordionTrigger>
+                <h1 className="font-bold text-xl my-3 ">Other Information</h1>
+              </AccordionTrigger>
+              <AccordionContent>
+                {isLoading && <p>Loading Data...</p>}
+                <div className="grid  grid-cols-2">
+                  {detailData?.properties?.map((property: any, idx: number) => (
+                    <div key={idx} className="flex items-center space-x-2">
+                      <p className="font-semibold">{property.name} :</p>
+                      <p>{property.value}</p>
+                    </div>
+                  ))}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </>
+      )}
       <DataTable
         columns={columns}
         rows={data?.dataTableRows || []}

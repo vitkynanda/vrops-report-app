@@ -145,6 +145,7 @@ export default function MainPage() {
         rows={Object.values(resources)}
         isLoading={isLoading}
         withFilter
+        withSelect
       />
     </main>
   );

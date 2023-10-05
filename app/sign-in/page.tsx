@@ -66,7 +66,6 @@ export default function SignIn() {
   const isLoading = form.formState.isSubmitting;
 
   const onSubmit = async (values: any) => {
-    console.log(values);
     try {
       const res = await axios.post(`/api/sign-in`, values);
       if (res.status === 200) {
@@ -74,7 +73,7 @@ export default function SignIn() {
         router.push("/");
       }
     } catch (error: any) {
-      toast.error("Fail to sign in", error.message);
+      toast.error("Failed to sign in", error.message);
       console.log(error);
     }
   };
