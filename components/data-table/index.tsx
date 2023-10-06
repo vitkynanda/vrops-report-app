@@ -15,6 +15,8 @@ import {
 } from "@tanstack/react-table";
 import { ChevronDown, Loader2 } from "lucide-react";
 
+import { rankItem } from "@tanstack/match-sorter-utils";
+
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -32,12 +34,23 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+const fuzzyFilter = (row: any, columnId: any, value: any, addMeta: any) => {
+  const itemRank = rankItem(row.getValue(columnId), value);
+  addMeta({
+    itemRank,
+  });
+  return itemRank.passed;
+};
+
+const pageList = [10, 20, 30, 50, 100];
+
 export function DataTable({
   columns,
   rows: data,
   isLoading,
   withFilter,
   withSelect,
+  ...rest
 }: any) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -46,6 +59,8 @@ export function DataTable({
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
+  const [globalFilter, setGlobalFilter] = React.useState("");
+  const [isPending, startTransition] = React.useTransition();
 
   const table = useReactTable({
     data,
@@ -58,29 +73,65 @@ export function DataTable({
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
+    onGlobalFilterChange: setGlobalFilter,
     state: {
       sorting,
       columnFilters,
       columnVisibility,
       rowSelection,
+      globalFilter,
+    },
+    filterFns: {
+      fuzzy: fuzzyFilter,
     },
   });
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  React.useEffect(() => table.setPageSize(rest?.pageStart || 10), []);
+
   return (
     <div className="w-full">
-      <div className="flex items-center py-4">
-        {withFilter && (
-          <Input
-            placeholder="Filter IP Address..."
-            value={
-              (table.getColumn("ip_address")?.getFilterValue() as string) ?? ""
-            }
-            onChange={(event) =>
-              table.getColumn("ip_address")?.setFilterValue(event.target.value)
-            }
-            className="max-w-sm"
-          />
-        )}
+      <div className="grid grid-cols-2 py-4 ">
+        <div className="flex items-center space-x-2 ">
+          {withFilter && (
+            <Input
+              placeholder="Filter all fields"
+              value={globalFilter}
+              onChange={(e) => setGlobalFilter(String(e.target.value))}
+              className="max-w-xs"
+            />
+          )}
+          <p className="text-sm">
+            Showing {`${table.getRowModel().rows.length}`} of {data.length}{" "}
+            entries
+          </p>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="ml-auto">
+                {table.getState().pagination.pageSize}{" "}
+                <ChevronDown className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {pageList.map((val, idx) => {
+                return (
+                  <DropdownMenuCheckboxItem
+                    key={idx}
+                    className="capitalize"
+                    checked={val === table.getState().pagination.pageSize}
+                    onCheckedChange={() =>
+                      table.setPageSize(Number(pageList[idx]))
+                    }
+                  >
+                    {val}
+                  </DropdownMenuCheckboxItem>
+                );
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="ml-auto">
@@ -151,7 +202,7 @@ export function DataTable({
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  {isLoading ? (
+                  {isLoading || isPending ? (
                     <div className="flex items-center justify-center space-x-2">
                       <Loader2 className="h-5 w-5 text-zinc-500 animate-spin my-4" />
                       <p className="text-xs text-zinc-500 dark:text-zinc-400">
@@ -174,7 +225,8 @@ export function DataTable({
             {table.getFilteredRowModel().rows.length} row(s) selected.
           </div>
         )}
-        <div className="space-x-2">
+
+        <div className="flex items-center space-x-2">
           <Button
             variant="outline"
             size="sm"
@@ -191,6 +243,13 @@ export function DataTable({
           >
             Next
           </Button>
+          <p className="text-sm">
+            Page:{" "}
+            <strong>
+              {table.getState().pagination.pageIndex + 1} of{" "}
+              {table.getPageCount()}
+            </strong>
+          </p>
         </div>
       </div>
     </div>
